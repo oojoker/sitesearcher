@@ -1,7 +1,5 @@
 package gao.wework.siteseacher;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -121,7 +119,7 @@ public class Driver implements WebContentCallBack {
 		this.searchTerm=searchTerm;
 		File file;
 		try {
-			file = new File("results/result_"+URLEncoder.encode(searchTerm,"UTF-8")+"_"+new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(new Date())+".txt");
+			file = new File("result_"+URLEncoder.encode(searchTerm,"UTF-8")+"_"+new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss").format(new Date())+".txt");
 	        if (file.exists()) 
 	        		file.delete();
 	        file.createNewFile();
@@ -210,11 +208,11 @@ public class Driver implements WebContentCallBack {
 
 	/**
 	 * Callback method for fetching the web content
-	 * if the returning content has search term somewhere, we will write the site domain into the BufferWriter.
+	 * if the returning content has search term somewhere (case sensitive), we will write the site domain into the BufferWriter.
 	 */
 	@Override
 	public void webContentCallBack(Site site, String content) throws Exception {
-		if(content!=null && Pattern.compile(this.searchTerm).matcher(content).find()){
+		if(content!=null && Pattern.compile(this.searchTerm).matcher(content).find()){//Pattern matcher is case sensitive
 			synchronized(lock_matchingSites_bw){
 				try {
 					bw.write(site+"\n");

@@ -2,8 +2,6 @@ package sitesearcher;
 
 import static org.junit.Assert.*;
 
-import org.junit.Test;
-
 import gao.wework.siteseacher.Site;
 import gao.wework.siteseacher.WebContentCallBack;
 

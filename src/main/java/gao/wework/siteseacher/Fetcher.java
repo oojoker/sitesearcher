@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidParameterException;
 import java.util.logging.Level;
@@ -31,6 +30,9 @@ public class Fetcher extends Thread {
 		this.site=site;
 		this.callback=callback;
 	}
+	//TODO: besides 301 and 302 redirect, there are other HTTP cases need attention, 
+	// such as SSLHandshakeException for networksolutions.com
+	// and java.io.IOException: Premature EOF for ebay.com
 	@Override
 	public void run() {
 		try{
@@ -52,7 +54,7 @@ public class Fetcher extends Thread {
 				urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 				responseCode = urlConnection.getResponseCode();
 				
-				if(responseCode==HttpURLConnection.HTTP_MOVED_TEMP || responseCode==HttpURLConnection.HTTP_MOVED_PERM){
+				if(responseCode==HttpURLConnection.HTTP_MOVED_TEMP || responseCode==HttpURLConnection.HTTP_MOVED_PERM){ //handle 302 and 301 redirect. 
 					redirected=true;
 					location = urlConnection.getHeaderField("Location");
 					tries++;

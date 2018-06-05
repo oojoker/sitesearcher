@@ -3,8 +3,6 @@
  */
 package sitesearcher;
 
-import static org.junit.Assert.*;
-
 import java.security.InvalidParameterException;
 
 import javax.naming.InsufficientResourcesException;

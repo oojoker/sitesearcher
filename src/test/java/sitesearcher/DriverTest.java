@@ -23,14 +23,24 @@ import gao.wework.siteseacher.MyThreadFactory;
  * @author Gao
  *
  */
+//TODO: more tests
 public class DriverTest {
 	Driver d=new Driver();
 	/**
 	 * Test method for {@link gao.wework.siteseacher.Driver#main(java.lang.String[])}.
 	 */
 	@Test
-	public void testMain() {
-		fail("Not yet implemented"); // TODO
+	public void testMain() throws Exception{
+		String[] args=new String[] {"-s","face", "-f","https://raw.githubusercontent.com/oojoker/sitesearcher/dev/texturls.txt"};
+		Driver.main(args);
+		while(!MyThreadFactory.allThreadEnds()){
+			this.wait(1000);
+		}
+		File[] f=findFilesForTerm(new File("./"), "face");
+		assertTrue(f.length > 0);
+		try(BufferedReader br=new BufferedReader(new FileReader(f[0]))){
+			assertTrue(br.readLine().contains("facebook.com"));
+		}
 	}
 
 	/**
@@ -63,7 +73,7 @@ public class DriverTest {
 		while(!MyThreadFactory.allThreadEnds()){
 			this.wait(1000);
 		}
-		File[] f=findFilesForTerm(new File("results/"), "test11111111111111");
+		File[] f=findFilesForTerm(new File("./"), "test11111111111111");
 		assertTrue(f.length > 0);
 		try(BufferedReader br=new BufferedReader(new FileReader(f[0]))){
 			assertNull(br.readLine());
@@ -77,14 +87,20 @@ public class DriverTest {
 		while(!MyThreadFactory.allThreadEnds()){
 			this.wait(1000);
 		}
-		File[] f=findFilesForTerm(new File("results/"), "facebook");
+		File[] f=findFilesForTerm(new File("./"), "facebook");
 		assertTrue(f.length > 0);
 		try(BufferedReader br=new BufferedReader(new FileReader(f[0]))){
 			assertTrue(br.readLine().contains("facebook.com"));
 		}
 	}
 	
-	public static File[] findFilesForTerm(File dir, final String searchTerm) {
+	/**
+	 * Helper method, returns result files in the destination folder.
+	 * @param dir 
+	 * @param searchTerm 
+	 * @return
+	 */
+	private static File[] findFilesForTerm(File dir, final String searchTerm) {
 	    return dir.listFiles(new FileFilter() {
 	        public boolean accept(File pathname) {
 	        	try {
