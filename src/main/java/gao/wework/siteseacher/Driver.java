@@ -1,5 +1,7 @@
 package gao.wework.siteseacher;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,7 +30,7 @@ import org.apache.commons.validator.routines.UrlValidator;
 
 /**
  * @author Gao
- * @version 0.2
+ * @version 0.3
  */
 
 /**
@@ -69,14 +71,20 @@ public class Driver implements WebContentCallBack {
 				urlfile=args[i+1];
 			}
 		}
-		d.searchSitesForTerm(urlfile, searchTerm);
+		try{
+			d.initialSites(urlfile);
+			d.searchSitesForTerm(searchTerm);
+		}catch(Exception ex){
+			//TODO handle Exception later
+		}
 	}
 	
 	/**
 	 * Initialize "Sites" by providing a text file contains all URLs.
 	 * @param siteURLs an url to a file contains all URLs
+	 * @return count of sites
 	 */
-	public void initialSites(String siteURLs){
+	public int initialSites(String siteURLs) throws Exception{
 		try {
             if (!new UrlValidator().isValid(siteURLs)) {
                 throw new MalformedURLException("siteURL is not a valid url");
@@ -85,6 +93,7 @@ public class Driver implements WebContentCallBack {
             URL url = new URL(siteURLs);
             try (InputStream is = url.openStream();
                     BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            	this.sites.clear();
                 br.lines()
                 	.skip(1)
                 	.forEach(line->{
@@ -93,11 +102,12 @@ public class Driver implements WebContentCallBack {
                 				Integer.parseInt(values[2]), Integer.parseInt(values[3])
                 				, Float.parseFloat(values[4]), Float.parseFloat(values[5]));
                 		this.sites.add(s);
-                		//this.operationQueue.add(s);
                 	});
             }
+            return this.sites.size(); 
         } catch (Exception ex) {
             Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Failed in initialization sites.", ex);
+            throw ex;
         }
 	}
 	
@@ -106,7 +116,7 @@ public class Driver implements WebContentCallBack {
 	 * The file will be /results/result_searchTerm_timestamp.txt
 	 * @param searchTerm
 	 */
-	private void initialResultFile(String searchTerm) {
+	private void initialResultFile(String searchTerm) throws Exception {
 		//TODO: we can potentially put all file related operations in one class other than this driver class. 
 		this.searchTerm=searchTerm;
 		File file;
@@ -119,6 +129,7 @@ public class Driver implements WebContentCallBack {
 	        bw = new BufferedWriter(fw);
 		} catch (Exception ex) {
 			Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Result file is not accessible", ex);
+			throw ex;
 		}
 	}
 	
@@ -137,7 +148,7 @@ public class Driver implements WebContentCallBack {
 	 * @param searchTerm search term that will be matched upon. 
 	 * @throws InvalidParameterException
 	 */
-	public void searchSitesForTerm(String searchTerm) throws InvalidParameterException{
+	public void searchSitesForTerm(String searchTerm) throws Exception{
 		if(sites.size()==0) throw new InvalidParameterException("Sites have not been initialized. Please call initialSites(String siteURLs) first or directly call searchSitesForTerm(String siteURLs, String searchTerm) ");
 		initialResultFile(searchTerm);
 		putSitesInQueue();
@@ -150,7 +161,7 @@ public class Driver implements WebContentCallBack {
 	 * @param siteURLs an url to a file contains all URLs
 	 * @param searchTerm search term that will be matched upon. 
 	 */
-	public void searchSitesForTerm(String siteURLs, String searchTerm) {
+	public void searchSitesForTerm(String siteURLs, String searchTerm) throws Exception{
 		initialSites(siteURLs);
 		initialResultFile(searchTerm);
 		putSitesInQueue();
@@ -160,7 +171,7 @@ public class Driver implements WebContentCallBack {
 	/**
 	 * Main dispatcher method for operation queue.
 	 */
-	private synchronized void startFetching(){
+	private synchronized void startFetching() throws Exception{
 		while(this.operationQueue.size()>0){ //more sites to go
 			if(MyThreadFactory.hasAvailableThread()){ //have available thread to handle it.
 				Site s=this.operationQueue.pop();
@@ -169,12 +180,14 @@ public class Driver implements WebContentCallBack {
 					f.start();
 				} catch (InsufficientResourcesException e) {
 					Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Not Enough Resources", e);
+					throw e;
 				}
 			}else{ //not enough resources at this moment, wait for a sec.
 				try {
 					this.wait(1000);
 				} catch (InterruptedException e) {
 					Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Main Thread Interrupted.", e);
+					throw e;
 				}
 			}
 		}
@@ -183,12 +196,14 @@ public class Driver implements WebContentCallBack {
 				this.wait(1000);
 			} catch (InterruptedException e) {
 				Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Main Thread Interrupted.", e);
+				throw e;
 			}
 		}
 		try {
 			bw.close(); //We went through everything, let's close the BufferWriter.
 		} catch (IOException e) {
 			Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Result file is not accessible.", e);
+			throw e;
 		}
 	}
 	
@@ -198,13 +213,14 @@ public class Driver implements WebContentCallBack {
 	 * if the returning content has search term somewhere, we will write the site domain into the BufferWriter.
 	 */
 	@Override
-	public void webContentCallBack(Site site, String content) {
+	public void webContentCallBack(Site site, String content) throws Exception {
 		if(content!=null && Pattern.compile(this.searchTerm).matcher(content).find()){
 			synchronized(lock_matchingSites_bw){
 				try {
 					bw.write(site+"\n");
 				} catch (IOException e) {
 					Logger.getLogger(Driver.class.getName()).log(Level.SEVERE, "Failed to write to result file for site: "+site.toString(), e);
+					throw e;
 				}
 				System.out.println("Site:"+site.getUrl()+" is a match");
 			}

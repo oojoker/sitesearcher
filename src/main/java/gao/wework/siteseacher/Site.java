@@ -1,5 +1,7 @@
 package gao.wework.siteseacher;
 
+import java.security.InvalidParameterException;
+
 /**
  * @author Gao
  */
@@ -40,6 +42,7 @@ public class Site {
 	
 	public Site(int rank, String url, int linkingRootDomains, int externalLinks, float mozRank, float mozTrust){
 		this.rank=rank;
+		if(url==null || url.trim().length()==0) throw new InvalidParameterException("URL field is required for the constructor");
 		this.domain=url;
 		this.url="http://www."+url.substring(1, url.length()-2); //We assume all inputs are valid formatted. 
 		this.linkingRootDomains=linkingRootDomains;
